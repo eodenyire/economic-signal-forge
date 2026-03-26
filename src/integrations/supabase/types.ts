@@ -14,27 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      macro_events: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          event_date: string
+          id: string
+          impact: string
+          source: string | null
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          event_date: string
+          id?: string
+          impact?: string
+          source?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          id?: string
+          impact?: string
+          source?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      portfolio_snapshots: {
+        Row: {
+          benchmark_value: number
+          created_at: string
+          cumulative_return: number | null
+          daily_return: number | null
+          id: string
+          portfolio_value: number
+          snapshot_date: string
+        }
+        Insert: {
+          benchmark_value: number
+          created_at?: string
+          cumulative_return?: number | null
+          daily_return?: number | null
+          id?: string
+          portfolio_value: number
+          snapshot_date: string
+        }
+        Update: {
+          benchmark_value?: number
+          created_at?: string
+          cumulative_return?: number | null
+          daily_return?: number | null
+          id?: string
+          portfolio_value?: number
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           full_name: string | null
           id: string
           phone: string | null
+          requested_role: string | null
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id: string
           phone?: string | null
+          requested_role?: string | null
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           phone?: string | null
+          requested_role?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sentiment_data: {
+        Row: {
+          analyzed_at: string
+          created_at: string
+          headline: string | null
+          id: string
+          label: string
+          score: number
+          source: string
+          symbol: string
+        }
+        Insert: {
+          analyzed_at?: string
+          created_at?: string
+          headline?: string | null
+          id?: string
+          label: string
+          score: number
+          source: string
+          symbol: string
+        }
+        Update: {
+          analyzed_at?: string
+          created_at?: string
+          headline?: string | null
+          id?: string
+          label?: string
+          score?: number
+          source?: string
+          symbol?: string
         }
         Relationships: []
       }
@@ -145,7 +247,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "client" | "investor" | "third_party"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -273,7 +375,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "client", "investor", "third_party"],
     },
   },
 } as const
