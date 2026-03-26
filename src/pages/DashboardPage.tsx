@@ -8,23 +8,57 @@ import { PortfolioChart } from "@/components/dashboard/PortfolioChart";
 import { MacroEventsPanel } from "@/components/dashboard/MacroEventsPanel";
 import { SentimentPanel } from "@/components/dashboard/SentimentPanel";
 import { TickerBar } from "@/components/landing/TickerBar";
-import {
-  mockSignals,
-  mockPriceHistory,
-  mockRiskMetrics,
-  mockPortfolioPerformance,
-  mockMacroEvents,
-  mockSentiment,
-} from "@/lib/mockData";
-import { Activity, Clock } from "lucide-react";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { Activity, Clock, Loader2, AlertCircle } from "lucide-react";
 
 export default function DashboardPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("SCOM");
-  const selectedStock = mockSignals.find((s) => s.symbol === selectedSymbol)!;
+  const { signals, macroEvents, sentiment, portfolioPerformance, riskMetrics, priceHistory, isLoading, error } = useDashboardData();
 
-  const buyCount = mockSignals.filter((s) => s.signal === "BUY").length;
-  const holdCount = mockSignals.filter((s) => s.signal === "HOLD").length;
-  const sellCount = mockSignals.filter((s) => s.signal === "SELL").length;
+  const selectedStock = signals.find((s) => s.symbol === selectedSymbol) || signals[0];
+
+  const buyCount = signals.filter((s) => s.signal === "BUY").length;
+  const holdCount = signals.filter((s) => s.signal === "HOLD").length;
+  const sellCount = signals.filter((s) => s.signal === "SELL").length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading dashboard data…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
+            <p className="text-sm text-muted-foreground">Failed to load data. Please sign in or try again.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedStock) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">No active trading signals found.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -41,7 +75,7 @@ export default function DashboardPage() {
                 Trading Dashboard
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                ML-powered signals across 15 NSE stocks · Dual-engine analysis
+                ML-powered signals across {signals.length} NSE stocks · Live data
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
@@ -66,20 +100,21 @@ export default function DashboardPage() {
 
           {/* Main content grid */}
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left column: Signals table + Chart */}
+            {/* Left column */}
             <div className="lg:col-span-2 space-y-6">
               <SignalsTable
-                signals={mockSignals}
+                signals={signals}
                 selectedSymbol={selectedSymbol}
                 onSelect={setSelectedSymbol}
               />
-              <StockChart data={mockPriceHistory} symbol={selectedSymbol} />
-              <PortfolioChart data={mockPortfolioPerformance} />
+              <StockChart data={priceHistory} symbol={selectedSymbol} />
+              {portfolioPerformance.length > 1 && (
+                <PortfolioChart data={portfolioPerformance} />
+              )}
             </div>
 
             {/* Right sidebar */}
             <div className="space-y-6">
-              {/* Selected stock detail */}
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -128,13 +163,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <SentimentPanel data={mockSentiment} />
-              <MacroEventsPanel events={mockMacroEvents} />
+              {sentiment.length > 0 && <SentimentPanel data={sentiment} />}
+              {macroEvents.length > 0 && <MacroEventsPanel events={macroEvents} />}
             </div>
           </div>
 
           {/* Risk metrics full width */}
-          <RiskMetricsPanel metrics={mockRiskMetrics} />
+          <RiskMetricsPanel metrics={riskMetrics} />
         </div>
       </main>
 
