@@ -8,16 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { Users, Shield, ShieldOff } from "lucide-react";
 
+type AppRole = "admin" | "user" | "client" | "investor" | "third_party";
+
 interface Profile {
   id: string;
   full_name: string | null;
   phone: string | null;
+  requested_role: string | null;
   created_at: string;
 }
 
 interface UserRole {
   user_id: string;
-  role: "admin" | "user";
+  role: AppRole;
 }
 
 interface Subscription {
@@ -40,7 +43,7 @@ export function UsersPanel() {
       supabase.from("subscriptions").select("user_id, plan, status"),
     ]);
     setProfiles(profilesRes.data || []);
-    setRoles(rolesRes.data || []);
+    setRoles((rolesRes.data as UserRole[]) || []);
     setSubscriptions(subsRes.data || []);
     setLoading(false);
   };
@@ -50,15 +53,15 @@ export function UsersPanel() {
   const getUserRole = (userId: string) => roles.find((r) => r.user_id === userId);
   const getUserSub = (userId: string) => subscriptions.find((s) => s.user_id === userId);
 
-  const toggleAdmin = async (userId: string) => {
+  const setUserRole = async (userId: string, newRole: AppRole) => {
     const existing = getUserRole(userId);
-    if (existing?.role === "admin") {
-      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
-      toast({ title: "Admin role removed" });
-    } else {
-      await supabase.from("user_roles").upsert({ user_id: userId, role: "admin" as any });
-      toast({ title: "Admin role granted" });
+    if (existing) {
+      await supabase.from("user_roles").delete().eq("user_id", userId);
     }
+    if (newRole !== "user") {
+      await supabase.from("user_roles").upsert({ user_id: userId, role: newRole as any });
+    }
+    toast({ title: `Role updated to ${newRole}` });
     fetchData();
   };
 
@@ -71,6 +74,15 @@ export function UsersPanel() {
     }
     toast({ title: `Subscription updated to ${plan}` });
     fetchData();
+  };
+
+  const roleBadgeVariant = (role: string) => {
+    switch (role) {
+      case "admin": return "destructive" as const;
+      case "investor": return "default" as const;
+      case "third_party": return "outline" as const;
+      default: return "secondary" as const;
+    }
   };
 
   return (
@@ -91,16 +103,17 @@ export function UsersPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Requested</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Subscription</TableHead>
                 <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {profiles.map((p) => {
                 const role = getUserRole(p.id);
                 const sub = getUserSub(p.id);
+                const currentRole = role?.role || "user";
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
@@ -108,9 +121,26 @@ export function UsersPanel() {
                       <p className="text-xs text-muted-foreground font-mono">{p.id.slice(0, 8)}…</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={role?.role === "admin" ? "default" : "secondary"} className="font-mono text-xs">
-                        {role?.role || "user"}
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {p.requested_role || "client"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={currentRole}
+                        onValueChange={(val) => setUserRole(p.id, val as AppRole)}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="investor">Investor</SelectItem>
+                          <SelectItem value="third_party">Third Party</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <Select
@@ -129,20 +159,6 @@ export function UsersPanel() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono">
                       {new Date(p.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleAdmin(p.id)}
-                        className="text-xs"
-                      >
-                        {role?.role === "admin" ? (
-                          <><ShieldOff className="h-3.5 w-3.5 mr-1" />Revoke</>
-                        ) : (
-                          <><Shield className="h-3.5 w-3.5 mr-1" />Make Admin</>
-                        )}
-                      </Button>
                     </TableCell>
                   </TableRow>
                 );
