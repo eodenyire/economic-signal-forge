@@ -92,6 +92,29 @@ export function SignalsPushPanel() {
     } else {
       toast({ title: `${form.signal} signal pushed for ${form.symbol}` });
       setOpen(false);
+
+      // Send SMS alerts to subscribers
+      const signalData = {
+        symbol: form.symbol,
+        name: stock.name,
+        signal: form.signal,
+        confidence: form.confidence,
+        price: form.price,
+        target_price: form.target_price ? Number(form.target_price) : null,
+        stop_loss: form.stop_loss ? Number(form.stop_loss) : null,
+        notes: form.notes || null,
+      };
+
+      supabase.functions.invoke("send-signal-alerts", { body: { signal: signalData } })
+        .then(({ data, error: alertError }) => {
+          if (alertError) {
+            console.error("Alert error:", alertError);
+            toast({ title: "Signal pushed, but alerts failed", description: alertError.message, variant: "destructive" });
+          } else if (data?.sent > 0) {
+            toast({ title: `SMS alerts sent to ${data.sent} subscriber(s)` });
+          }
+        });
+
       setForm({ symbol: "SCOM", signal: "BUY", confidence: 75, price: 0, target_price: "", stop_loss: "", notes: "" });
       fetchSignals();
     }
