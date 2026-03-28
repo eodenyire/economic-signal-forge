@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Zap, Trash2 } from "lucide-react";
+import { Plus, Zap, Trash2, Send } from "lucide-react";
 
 const NSE_STOCKS = [
   { symbol: "SCOM", name: "Safaricom PLC" },
